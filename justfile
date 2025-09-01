@@ -1,3 +1,6 @@
+dev:
+    dotnet watch --project src/Api run
+
 # create solution 
 create-sln:
     dotnet new sln -n Dentlike
