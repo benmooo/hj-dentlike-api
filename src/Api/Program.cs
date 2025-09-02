@@ -1,13 +1,30 @@
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.EntityFrameworkCore;
+using Dentlike.Infrastructure.Data;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-// builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+// controller based api
+builder.Services.AddControllers();
+
+// swagger
+builder.Services.AddEndpointsApiExplorer(); // minimal api
 builder.Services.AddSwaggerGen();
+
+// database context
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sql =>
+    {
+        sql.MigrationsAssembly("Infrastructure");   // 迁移文件放到 Infrastructure
+        sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null); // 瞬断重试
+        sql.CommandTimeout(30);
+    }));
+
+
+
 
 // authentication and authorization
 builder.Services.AddAuthentication().AddJwtBearer();
@@ -21,7 +38,6 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -36,7 +52,7 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-var adminGroup = app.MapGroup("/admin").RequireAuthorization("admin");
+var adminGroup = app.MapGroup("/").RequireAuthorization("admin");
 
 adminGroup.MapGet("/weatherforecast", () =>
 {

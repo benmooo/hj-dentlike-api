@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Tests;
+﻿namespace Dentlike.Application.Tests;
 
 public class UnitTest1
 {
