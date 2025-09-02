@@ -1,12 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using Dentlike.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Dentlike.Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
         // 通过 DI 传入
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options) { }
 
         // entity sets
         public DbSet<User> Users => Set<User>();

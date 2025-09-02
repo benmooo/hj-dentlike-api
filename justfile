@@ -76,3 +76,12 @@ migration-script from="0":
         -p src/Infrastructure \
         -s src/Api \
         -o migration.sql
+
+
+
+# install csharpier which is a code formatter for C# which is similar to prettier for JavaScript/TypeScript
+install-csharpier:
+    dotnet tool install -g csharpier
+
+format:
+    dotnet csharpier format .
