@@ -4,7 +4,7 @@ namespace Dentlike.Domain.Entities
     {
         public int Id { get; set; } // Primary key
         public required string Name { get; set; }
-        public string? Email { get; set; }
+        public required string Email { get; set; }
 
         public int age { get; set; }
 

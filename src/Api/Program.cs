@@ -9,6 +9,7 @@ builder.Services.AddOpenApi();
 
 // controller based api
 builder.Services.AddControllers();
+builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
 // swagger
 builder.Services.AddEndpointsApiExplorer(); // minimal api
@@ -45,22 +46,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
-// app.UseCors();
-
-var summaries = new[]
-{
-    "Freezing",
-    "Bracing",
-    "Chilly",
-    "Cool",
-    "Mild",
-    "Warm",
-    "Balmy",
-    "Hot",
-    "Sweltering",
-    "Scorching",
-};
+var summaries = new[] { "Freezing", "Bracing" };
 
 var adminGroup = app.MapGroup("/").RequireAuthorization("admin");
 
