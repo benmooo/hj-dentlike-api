@@ -1,4 +1,5 @@
 using AspNetCoreRateLimit;
+using Dentlike.Api.Middlewares;
 using Dentlike.Application.Interfaces;
 using Dentlike.Application.Services;
 using Dentlike.Domain.Interfaces;
@@ -88,6 +89,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Security Headers Middleware
+// Enable NWebSec Security Response Headers
+app.UseXContentTypeOptions();
+app.UseXfo(options => options.SameOrigin());
+app.UseXXssProtection(options => options.EnabledWithBlockMode());
+app.UseReferrerPolicy(options => options.NoReferrerWhenDowngrade());
+app.UsePermissionPolicy(); // Permissions(or old Feature)-Policy security Header
 
 // Enable IP Rate Limiting Middleware
 app.UseIpRateLimiting();
