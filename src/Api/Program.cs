@@ -1,7 +1,48 @@
+using AspNetCoreRateLimit;
+using Dentlike.Application.Interfaces;
+using Dentlike.Application.Services;
+using Dentlike.Domain.Interfaces;
 using Dentlike.Infrastructure.Data;
+using Dentlike.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    // .ReadFrom.Configuration(builder.Configuration)
+    // .Enrich.FromLogContext()
+    // .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    // .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File("logs/applog-.txt", rollingInterval: RollingInterval.Day) // each log file per day
+    .CreateLogger();
+builder.Logging.ClearProviders().AddSerilog();
+
+// type-safe access to configuration settings
+builder.Services.AddOptions();
+
+// needed to store rate limit counters and ip rules
+builder.Services.AddMemoryCache();
+
+// load general configuration from appsettings.json
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+
+// inject counter and rules stores
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+
+// configuration (resolvers, counter key builders)
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+
+// client IP resolvers use it
+builder.Services.AddHttpContextAccessor();
+
+// add health checks
+builder.Services.AddHealthChecks();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -28,6 +69,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
 // authentication and authorization
 builder.Services.AddAuthentication().AddJwtBearer();
 builder
@@ -45,36 +89,26 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Enable IP Rate Limiting Middleware
+app.UseIpRateLimiting();
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-
-var summaries = new[] { "Freezing", "Bracing" };
-
-var adminGroup = app.MapGroup("/").RequireAuthorization("admin");
-
-adminGroup
-    .MapGet(
-        "/weatherforecast",
-        () =>
-        {
-            var forecast = Enumerable
-                .Range(1, 5)
-                .Select(index => new WeatherForecast(
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-                .ToArray();
-            return forecast;
-        }
-    )
-    .WithName("GetWeatherForecast");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/ping", () => new { code = 0, msg = "pong" });
 
-app.Run();
+var apiGroup = app.MapGroup("api");
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// auth group
+var authGroup = apiGroup.MapGroup("auth");
+var adminGroup = apiGroup.MapGroup("").RequireAuthorization("admin");
+
+authGroup.MapPost("/login", () => Results.Ok(new { token = "fake-jwt-token" })).WithName("Login");
+authGroup.MapPost("/register", () => Results.Ok()).WithName("Register");
+
+// Configure custom health check endpoint
+app.MapHealthChecks("/health");
+
+app.MapControllers();
+app.Run();

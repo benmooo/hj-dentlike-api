@@ -11,7 +11,7 @@ src/
   │    ├── Program.cs
   │    ├── Startup.cs
   │    ├── Controllers/
-  │    │     ├── WeatherForecastController.cs
+  │    │     ├── OrdersController.cs
   │    │     ├── UsersController.cs
   │    │     └── ProductsController.cs
   │    ├── Filters/

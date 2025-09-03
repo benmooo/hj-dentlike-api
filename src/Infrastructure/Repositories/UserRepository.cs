@@ -3,7 +3,7 @@ using Dentlike.Domain.Interfaces;
 using Dentlike.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace MyProject.Infrastructure.Repositories
+namespace Dentlike.Infrastructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
