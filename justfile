@@ -85,3 +85,8 @@ install-csharpier:
 
 format:
     dotnet csharpier format .
+
+# create jwt 
+create-jwt:
+    cd src/Api && \
+    dotnet user-jwts create --scheme Bearer --role admin 

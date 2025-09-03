@@ -1,3 +1,4 @@
+using System.Text;
 using AspNetCoreRateLimit;
 using Dentlike.Api.Middlewares;
 using Dentlike.Application.Interfaces;
@@ -5,7 +6,9 @@ using Dentlike.Application.Services;
 using Dentlike.Domain.Interfaces;
 using Dentlike.Infrastructure.Data;
 using Dentlike.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -77,8 +80,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddAuthentication().AddJwtBearer();
 builder
     .Services.AddAuthorizationBuilder()
-    .AddPolicy("admin_policy", policy => policy.RequireRole("admin"))
-    .AddPolicy("user_policy", policy => policy.RequireRole("user"));
+    .AddPolicy("admin", policy => policy.RequireRole("admin")) // "role": "Admin" | "roles": ["Admin", "User"]
+    .AddPolicy("user", policy => policy.RequireRole("user"))
+    .AddPolicy("specific", policy => policy.RequireClaim("specific-claim", "A-1234"));
 
 var app = builder.Build();
 
@@ -101,6 +105,8 @@ app.UsePermissionPolicy(); // Permissions(or old Feature)-Policy security Header
 // Enable IP Rate Limiting Middleware
 app.UseIpRateLimiting();
 app.UseHttpsRedirection();
+
+// Cors
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -111,10 +117,14 @@ var apiGroup = app.MapGroup("api");
 
 // auth group
 var authGroup = apiGroup.MapGroup("auth");
-var adminGroup = apiGroup.MapGroup("").RequireAuthorization("admin");
+var adminGroup = apiGroup.MapGroup("admin").RequireAuthorization("admin");
 
 authGroup.MapPost("/login", () => Results.Ok(new { token = "fake-jwt-token" })).WithName("Login");
 authGroup.MapPost("/register", () => Results.Ok()).WithName("Register");
+
+adminGroup
+    .MapGet("/users", () => Results.Ok(new[] { new { id = 1, name = "John Doe" } }))
+    .WithName("GetUsers");
 
 // Configure custom health check endpoint
 app.MapHealthChecks("/health");
